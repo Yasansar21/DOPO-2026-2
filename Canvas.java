@@ -151,7 +151,7 @@ public class Canvas{
      */
     private void redraw(){
         erase();
-        for(Iterator i=objects.iterator(); i.hasNext(); ) {
+        for(Iterator<Object> i=objects.iterator(); i.hasNext(); ) {
                        shapes.get(i.next()).draw(graphic);
         }
         canvas.repaint();
