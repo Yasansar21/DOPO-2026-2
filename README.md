@@ -1,9 +1,7 @@
 # DOPO-2026-2
 Repositorio DOPO Proyecto 1
 
-Diagramas de clases : 
-
-
+Diagramas de clases : En el archivo .asta 
 
 Preguntas de Retrospectiva :
 1. adicion de rueda, crear o diseñar simbolos, que funcione estamdo invisible, cada simbolo tenga un color diferente, mostrar que se hizo jackpot, pues se desconpuso el problema, por partes y cada miniciclo, cumple una funcion el el programa final
@@ -13,4 +11,4 @@ Preguntas de Retrospectiva :
 5. El diseñar los diagramas para que que funcionara bien,  y luego aplicar al código, corrigiendo cosas de las clases como agregar nuevas, observar que faltaba o que fallaba e ir modificando hasta solucionar.
 6. Nos ayudamos mutuamente en el desarrollo del proyecto en pro de mejorar en el diseño de los diagramas, así como la comunicación en los avances para realiazar alguna modificacion en la parte designada.
 7.  Las practicas XP usadas fueron: Diseño simple, refacttoring, integracion continua, porque cada uno tenia unas responsabilidades y un compromiso con el otro, asi que se fueron haciendo entregas pequeñas de avances hasta concretar con el trabajo solicitado
-8.
+8. Parte de las citas que nos ayudaron fue el uso de IA para poder crear la clase encargada de tener toda la gama de colores que posee CSS , asi como ayuda para la verificacion y correcion de errores al momento de crear los diagramas de clase y correcciones de no compilacion del codigo, asi como las notas de clase para poder saber como realizar todo lo solicitado.
