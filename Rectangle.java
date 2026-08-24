@@ -1,15 +1,17 @@
 import java.awt.*;
 
 /**
- * A triangle that can be manipulated and that draws itself on a canvas.
+ * A rectangle that can be manipulated and that draws itself on a canvas.
  * 
- * @author  Michael Kolling and David J. Barnes
- * @version 1.0  (15 July 2000)
+ * @author  Michael Kolling and David J. Barnes (Modified)
+ * @version 1.0  (15 July 2000)()
  */
 
-public class Triangle{
-    
-    public static int VERTICES=3;
+
+ 
+public class Rectangle{
+
+    public static int EDGES = 4;
     
     private int height;
     private int width;
@@ -17,21 +19,23 @@ public class Triangle{
     private int yPosition;
     private String color;
     private boolean isVisible;
+    private Color exactColor;   // extensión slotMachine: color CSS exacto, si se usó
 
     /**
-     * Create a new triangle at default position with default color.
+     * Create a new rectangle at default position with default color.
      */
-    public Triangle(){
+    public Rectangle(){
         height = 30;
         width = 40;
-        xPosition = 140;
+        xPosition = 70;
         yPosition = 15;
-        color = "green";
+        color = "magenta";
         isVisible = false;
     }
+    
 
     /**
-     * Make this triangle visible. If it was already visible, do nothing.
+     * Make this rectangle visible. If it was already visible, do nothing.
      */
     public void makeVisible(){
         isVisible = true;
@@ -39,7 +43,7 @@ public class Triangle{
     }
     
     /**
-     * Make this triangle invisible. If it was already invisible, do nothing.
+     * Make this rectangle invisible. If it was already invisible, do nothing.
      */
     public void makeInvisible(){
         erase();
@@ -47,35 +51,35 @@ public class Triangle{
     }
     
     /**
-     * Move the triangle a few pixels to the right.
+     * Move the rectangle a few pixels to the right.
      */
     public void moveRight(){
         moveHorizontal(20);
     }
 
     /**
-     * Move the triangle a few pixels to the left.
+     * Move the rectangle a few pixels to the left.
      */
     public void moveLeft(){
         moveHorizontal(-20);
     }
 
     /**
-     * Move the triangle a few pixels up.
+     * Move the rectangle a few pixels up.
      */
     public void moveUp(){
         moveVertical(-20);
     }
 
     /**
-     * Move the triangle a few pixels down.
+     * Move the rectangle a few pixels down.
      */
     public void moveDown(){
         moveVertical(20);
     }
 
     /**
-     * Move the triangle horizontally.
+     * Move the rectangle horizontally.
      * @param distance the desired distance in pixels
      */
     public void moveHorizontal(int distance){
@@ -85,7 +89,7 @@ public class Triangle{
     }
 
     /**
-     * Move the triangle vertically.
+     * Move the rectangle vertically.
      * @param distance the desired distance in pixels
      */
     public void moveVertical(int distance){
@@ -95,7 +99,7 @@ public class Triangle{
     }
 
     /**
-     * Slowly move the triangle horizontally.
+     * Slowly move the rectangle horizontally.
      * @param distance the desired distance in pixels
      */
     public void slowMoveHorizontal(int distance){
@@ -115,7 +119,7 @@ public class Triangle{
     }
 
     /**
-     * Slowly move the triangle vertically.
+     * Slowly move the rectangle vertically.
      * @param distance the desired distance in pixels
      */
     public void slowMoveVertical(int distance){
@@ -137,7 +141,7 @@ public class Triangle{
     /**
      * Change the size to the new size
      * @param newHeight the new height in pixels. newHeight must be >=0.
-     * @param newWidht the new width in pixels. newWidht must be >=0.
+     * @param newWidht the new width in pixels. newWidth must be >=0.
      */
     public void changeSize(int newHeight, int newWidth) {
         erase();
@@ -153,24 +157,44 @@ public class Triangle{
      */
     public void changeColor(String newColor){
         color = newColor;
+        exactColor = null;
+        draw();
+    }
+
+    /**
+     * ---- Extensión para el proyecto slotMachine ----
+     * Change the color to an exact java.awt.Color, instead of one of the
+     * few names Canvas recognizes literally. This lets Symbol paint the
+     * full CSS3 palette (see CssColors.java) rather than approximating
+     * every color to the nearest of red/black/blue/yellow/green/magenta/
+     * white.
+     * @param newColor the exact color to paint
+     */
+    public void changeColor(Color newColor){
+        exactColor = newColor;
         draw();
     }
 
     /*
-     * Draw the triangle with current specifications on screen.
+     * Draw the rectangle with current specifications on screen.
      */
-    private void draw(){
+
+    private void draw() {
         if(isVisible) {
             Canvas canvas = Canvas.getCanvas();
-            int[] xpoints = { xPosition, xPosition + (width/2), xPosition - (width/2) };
-            int[] ypoints = { yPosition, yPosition + height, yPosition + height };
-            canvas.draw(this, color, new Polygon(xpoints, ypoints, 3));
+            java.awt.Rectangle shape = new java.awt.Rectangle(xPosition, yPosition,
+                                       width, height);
+            if (exactColor != null) {
+                canvas.draw(this, exactColor, shape);
+            } else {
+                canvas.draw(this, color, shape);
+            }
             canvas.wait(10);
         }
     }
 
     /*
-     * Erase the triangle on screen.
+     * Erase the rectangle on screen.
      */
     private void erase(){
         if(isVisible) {
