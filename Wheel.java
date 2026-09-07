@@ -4,40 +4,43 @@ import java.util.ArrayList;
  * Clase para la creacion de las ruedas necesarias para hacer la slot machine
  * @author Yamel Sarmiento - Johan Pinilla
  */
-public class Wheel
-{
+public class Wheel {
     private static final int WINDOW_LEFT = 60;
     private static final int WINDOW_TOP = 100;
-    private static final int WINDOW_GAP = 20;
+    private static final int WINDOW_GAP = 30;
+    private static final int FRAME_MARGIN = 15;
+    private static final int FRAME_WIDTH = Symbol.WIDTH + FRAME_MARGIN * 2;
+    private static final int FRAME_HEIGHT = Symbol.HEIGHT + FRAME_MARGIN * 2;
 
     private ArrayList<Symbol> symbols;
-    private int currentIndex;  
-    private int position;      
-
+    private int currentIndex;
+    private int position;
+    private boolean locked;        // ← NUEVO Ciclo 2
+    private final Object frame;
     /**
-     * Crea una rueda vacia en relacion con la posicion dentro de la maquina
+     * Crea una rueda vacia en relacion con la posicion dentro de la maquina.
+     * @param position posicion 1-based de la rueda en la maquina
      */
-    public Wheel(int position)
-    {
+    public Wheel(int position) {
         symbols = new ArrayList<>();
         currentIndex = 0;
         this.position = position;
+        locked = false;            // ← NUEVO Ciclo 2
+        frame = new Object();
     }
 
     /**
-     * Agrega un nuevo symbol al color dado en cada una de las ruedas
+     * Agrega un nuevo symbol al color dado en cada una de las ruedas.
      */
-    public void addSymbol(String color)
-    {
+    public void addSymbol(String color) {
         addSymbol(symbols.size(), color);
     }
 
     /**
-     * Mantener cada uno de los symbols en secuencia en el mismo orden 
-     * establecido
+     * Mantener cada uno de los symbols en secuencia en el mismo orden
+     * establecido.
      */
-    void addSymbol(int index, String color)
-    {
+    void addSymbol(int index, String color) {
         int target = Math.max(0, Math.min(index, symbols.size()));
         symbols.add(target, new Symbol(color));
         if (symbols.size() == 1) {
@@ -46,14 +49,13 @@ public class Wheel
     }
 
     /**
-     * Quita el symbol del color dado si se presenta se elimina del canvas
+     * Quita el symbol del color dado, si se presenta se elimina del canvas.
+     * @param color color del simbolo a eliminar
+     * @return true si se elimino, false si no existia
      */
-    public boolean delSymbol(String color)
-    {
+    public boolean delSymbol(String color) {
         int idx = indexOf(color);
-        if (idx == -1) {
-            return false;
-        }
+        if (idx == -1) return false;
         Symbol removed = symbols.remove(idx);
         removed.erase();
         if (symbols.isEmpty()) {
@@ -67,95 +69,124 @@ public class Wheel
     }
 
     /**
-     * Hace que el symbol del color dado sea el indicado a mostras en la rueda 
-     * asignada
+     * Hace que el symbol del color dado sea el visible en la rueda.
+     * @param color color del simbolo a mostrar
+     * @return true si se encontro y se posiciono, false si no existia
      */
-    public boolean placeSymbol(String color)
-    {
+    public boolean placeSymbol(String color) {
         int idx = indexOf(color);
-        if (idx == -1) {
-            return false;
-        }
+        if (idx == -1) return false;
         currentIndex = idx;
         return true;
     }
 
     /**
-     * Rota cada una de las ruedas en un numero asignado de pasos
+     * Rota la rueda un numero de pasos. Soporta pasos negativos.
+     * Usa floorMod para garantizar indice positivo siempre.
+     * @param steps numero de pasos a girar
      */
-    public void spin(int steps)
-    {
+    public void spin(int steps) {
         if (!symbols.isEmpty()) {
             currentIndex = Math.floorMod(currentIndex + steps, symbols.size());
         }
     }
 
     /**
-     * devuelve el symbol que realmente se muestra , en caso de ser null se debe
-     * a que la rueda no tiene symbol de por si 
+     * Fija la rueda para que no pueda girar.
      */
-    public Symbol currentSymbol()
-    {
+    public void lock() {                         // Ciclo 2
+        locked = true;
+    }
+
+    /**
+     * Suelta la rueda para que pueda girar nuevamente.
+     */
+    public void unlock() {                       // Ciclo 2
+        locked = false;
+    }
+
+    /**
+     * Indica si la rueda esta fijada.
+     * @return true si la rueda esta bloqueada
+     */
+    public boolean isLocked() {                  // Ciclo 2
+        return locked;
+    }
+
+    /**
+     * Devuelve el symbol visible actualmente.
+     * @return symbol actual, null si la rueda esta vacia
+     */
+    public Symbol currentSymbol() {
         return symbols.isEmpty() ? null : symbols.get(currentIndex);
     }
 
     /**
-     * Se puedever la lista completa ordenada de la lista de simbolos dentro de
-     * la rueda
+     * Retorna la lista completa de simbolos de la rueda.
+     * @return lista de simbolos
      */
-    public ArrayList<Symbol> getSymbols()
-    {
+    public ArrayList<Symbol> getSymbols() {
         return symbols;
     }
 
     /**
-     * @return this wheel's 1-based position inside the machine
+     * @return posicion 1-based de la rueda dentro de la maquina
      */
-    public int getPosition()
-    {
+    public int getPosition() {
         return position;
     }
 
-    void setPosition(int position)
-    {
+    void setPosition(int position) {
         this.position = position;
     }
 
-    /**
-     * Re dibuja la rueda , esconde cada symbol y solo muestra la actual, 
-     * verifica si la maquina es visible
-     */
-    void drawWheel()
-    {
+        /**
+         * Redibuja la rueda: esconde todos los simbolos y muestra solo el actual.
+         */
+    void drawWheel() {
         for (Symbol s : symbols) {
             s.erase();
         }
+    
+        int x = WINDOW_LEFT
+            + (position - 1) * (Symbol.WIDTH + WINDOW_GAP);
+    
+        int frameX = x - FRAME_MARGIN;
+        int frameY = WINDOW_TOP - FRAME_MARGIN;
+    
+        Canvas.getCanvas().drawOutline(
+            frame,
+            java.awt.Color.BLACK,
+            new java.awt.Rectangle(
+                frameX,
+                frameY,
+                FRAME_WIDTH,
+                FRAME_HEIGHT
+            )
+        );
+    
         Symbol current = currentSymbol();
+    
         if (current != null) {
-            int x = WINDOW_LEFT + (position - 1) * (Symbol.WIDTH + WINDOW_GAP);
             current.moveTo(x, WINDOW_TOP);
             current.draw();
         }
     }
 
     /**
-     * Esconde cualquier symbol creado en el momento en que la maquina se
-     * vuelve invisible
+     * Elimina visualmente toda la rueda.
      */
-    void eraseCurrent()
-    {
-        Symbol current = currentSymbol();
-        if (current != null) {
-            current.erase();
+    void eraseWheel() {
+        for (Symbol s : symbols) {
+            s.erase();
         }
+    
+        Canvas.getCanvas().erase(frame);
     }
 
-    private int indexOf(String color)
-    {
+    private int indexOf(String color) {
         for (int i = 0; i < symbols.size(); i++) {
-            if (symbols.get(i).getColor().equals(color)) {
-                return i;
-            }
+            if (symbols.get(i).getColor().equals(color)) return i;
         }
         return -1;
     }

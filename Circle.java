@@ -164,7 +164,4 @@ public class Circle{
         color = newColor;
         draw();
     }
-
-
-
 }

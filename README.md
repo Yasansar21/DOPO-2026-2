@@ -12,3 +12,6 @@ Preguntas de Retrospectiva :
 6. Nos ayudamos mutuamente en el desarrollo del proyecto en pro de mejorar en el diseño de los diagramas, así como la comunicación en los avances para realiazar alguna modificacion en la parte designada.
 7.  Las practicas XP usadas fueron: Diseño simple, refacttoring, integracion continua, porque cada uno tenia unas responsabilidades y un compromiso con el otro, asi que se fueron haciendo entregas pequeñas de avances hasta concretar con el trabajo solicitado
 8. Parte de las citas que nos ayudaron fue el uso de IA para poder crear la clase encargada de tener toda la gama de colores que posee CSS , asi como ayuda para la verificacion y correcion de errores al momento de crear los diagramas de clase y correcciones de no compilacion del codigo, asi como las notas de clase para poder saber como realizar todo lo solicitado.
+
+AJUSTES SEGUNDA ENTREGA 
+    Cambios en diagrama de clases y adicionar los nuevos metodos que se requieren en la segunda entrega

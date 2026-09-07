@@ -5,19 +5,19 @@ import javax.swing.JOptionPane;
 /**
  * Clase principal del slot machine donde se busca que el proyecto funcione
  * de manera correcta.
- * @author Yamel Sarmiento - Johan Pinilla 
+ * @author Yamel Sarmiento - Johan Pinilla
  */
 public class SlotMachine
 {
     private ArrayList<Wheel> wheels;
     private boolean visible;
     private boolean lastOk;
-    private Circle jackpotLight; //muestra una luz si se hace un jackpot
+    private Circle jackpotLight;
     private Random random;
 
     /**
-     * Creacion de una nueva slot machine que inicia de manera invisible ,
-     * ninguna rueda (las ruedas hay que crearlas al momento de hacer visible 
+     * Creacion de una nueva slot machine que inicia de manera invisible,
+     * ninguna rueda (las ruedas hay que crearlas al momento de hacer visible
      * la slot machine)
      */
     public SlotMachine()
@@ -26,15 +26,12 @@ public class SlotMachine
         visible = false;
         lastOk = true;
         random = new Random();
-        //jackpotLight = new Circle();
-        //jackpotLight.changeSize(30);
-        //jackpotLight.changeColor("Green");
     }
 
     /**
-     * 
      * Crea la slot machine y crea espacios vacios para la creacion de las ruedas
-     * segun la posicion determinada 
+     * segun la posicion determinada.
+     * @param pos posicion donde se agrega la rueda
      */
     public void addWheel(int pos)
     {
@@ -47,7 +44,8 @@ public class SlotMachine
     }
 
     /**
-     * Remueve la rueda asignada a la posicion dada 
+     * Remueve la rueda asignada a la posicion dada.
+     * @param pos posicion de la rueda a eliminar
      */
     public void delWheel(int pos)
     {
@@ -57,14 +55,82 @@ public class SlotMachine
         }
         int target = clamp(pos, 1, wheels.size());
         Wheel removed = wheels.remove(target - 1);
-        removed.eraseCurrent();
+        removed.eraseWheel();
         renumberWheels();
         succeed();
     }
 
     /**
-     * Agregar una nueva cantidad de colores validos del CSS para que cada rueda tenga
-     * una variedad de colores sobre la cual buscar el jackpot
+     * Intercambia dos ruedas de posicion dentro de la maquina.
+     * Si las posiciones son iguales la operacion no se realiza.
+     * @param wheel1 posicion de la primera rueda
+     * @param wheel2 posicion de la segunda rueda
+     */
+    public void swap(int wheel1, int wheel2)
+    {
+        if (wheels.isEmpty()) {
+            fail("La máquina no tiene ruedas.");
+            return;
+        }
+        int pos1 = clamp(wheel1, 1, wheels.size());
+        int pos2 = clamp(wheel2, 1, wheels.size());
+        if (pos1 == pos2) {
+            fail("Las posiciones deben ser diferentes.");
+            return;
+        }
+        Wheel w1 = wheels.get(pos1 - 1);
+        Wheel w2 = wheels.get(pos2 - 1);
+        wheels.set(pos1 - 1, w2);
+        wheels.set(pos2 - 1, w1);
+        renumberWheels();
+        succeed();
+    }
+
+    /**
+     * Fija una rueda para que no pueda girar.
+     * Si la rueda ya esta fijada la operacion no se realiza.
+     * @param wheel posicion de la rueda a fijar
+     */
+    public void lock(int wheel)
+    {
+        Wheel target = wheelAt(wheel);
+        if (target == null) {
+            fail("La máquina no tiene ruedas.");
+            return;
+        }
+        if (target.isLocked()) {
+            fail("La rueda " + target.getPosition() + " ya está fijada.");
+            return;
+        }
+        target.lock();
+        succeed();
+    }
+
+    /**
+     * Suelta una rueda fijada para que pueda girar nuevamente.
+     * Si la rueda no esta fijada la operacion no se realiza.
+     * @param wheel posicion de la rueda a soltar
+     */
+    public void unlock(int wheel)
+    {
+        Wheel target = wheelAt(wheel);
+        if (target == null) {
+            fail("La máquina no tiene ruedas.");
+            return;
+        }
+        if (!target.isLocked()) {
+            fail("La rueda " + target.getPosition() + " no está fijada.");
+            return;
+        }
+        target.unlock();
+        succeed();
+    }
+
+    /**
+     * Agregar una nueva cantidad de colores validos del CSS para que cada
+     * rueda tenga una variedad de colores sobre la cual buscar el jackpot.
+     * @param pos posicion del simbolo en la lista
+     * @param color color CSS valido del simbolo
      */
     public void addSymbol(int pos, String color)
     {
@@ -84,7 +150,8 @@ public class SlotMachine
     }
 
     /**
-     * Quita un symbol color de cada una de las ruedas de la maquina
+     * Quita un symbol color de cada una de las ruedas de la maquina.
+     * @param color color del simbolo a eliminar
      */
     public void delSymbol(String color)
     {
@@ -100,8 +167,9 @@ public class SlotMachine
 
     /**
      * Permite asignar directamente un valor de color a una posicion de rueda
-     * en especifico sin tener que realizar un spin para asignarle el valor a 
-     * la rueda
+     * en especifico sin tener que realizar un spin.
+     * @param wheel posicion de la rueda
+     * @param symbol color del simbolo a mostrar
      */
     public void placeSymbol(int wheel, String symbol)
     {
@@ -118,7 +186,8 @@ public class SlotMachine
     }
 
     /**
-     * Gira las ruedas de forma aleatoria
+     * Gira una rueda de forma aleatoria.
+     * @param wheel posicion de la rueda a girar
      */
     public void spin(int wheel)
     {
@@ -136,8 +205,72 @@ public class SlotMachine
     }
 
     /**
-     * Gira cada una de las ruedas de la maquina de forma independiente y en
-     * caso de no existir ruedas envia el mensaje de error
+     * Gira una rueda un numero especifico de pasos.
+     * Si el simulador es visible el movimiento se muestra paso a paso.
+     * Si la rueda esta fijada la operacion no se realiza.
+     * @param wheel posicion de la rueda
+     * @param steps numero de pasos, negativos giran en sentido contrario
+     */
+    public void spin(int wheel, int steps)
+    {
+        Wheel target = wheelAt(wheel);
+        if (target == null) {
+            fail("La máquina no tiene ruedas.");
+            return;
+        }
+        if (target.getSymbols().isEmpty()) {
+            fail("La rueda " + target.getPosition() + " no tiene símbolos.");
+            return;
+        }
+        if (target.isLocked()) {
+            fail("La rueda " + target.getPosition() + " está fijada.");
+            return;
+        }
+        int direction = (steps >= 0) ? 1 : -1;
+        int totalSteps = Math.abs(steps);
+        if (visible) {
+            for (int i = 0; i < totalSteps; i++) {
+                target.spin(direction);
+                target.drawWheel();
+                Canvas.getCanvas().wait(300);
+            }
+        } else {
+            target.spin(steps);
+        }
+        succeed();
+    }
+
+    /**
+     * Deja la maquina en una configuracion dada por el arreglo de colores.
+     * Las ruedas fijadas no se modifican.
+     * Si el arreglo no coincide con el numero de ruedas la operacion no
+     * se realiza.
+     * @param setSymbols arreglo con el color visible deseado por cada rueda
+     */
+    public void spin(String[] setSymbols)
+    {
+        if (setSymbols.length != wheels.size()) {
+            fail("La configuración no coincide con el número de ruedas.");
+            return;
+        }
+        boolean anyFailed = false;
+        for (int i = 0; i < wheels.size(); i++) {
+            Wheel w = wheels.get(i);
+            if (w.isLocked()) continue;
+            if (!w.placeSymbol(setSymbols[i])) {
+                anyFailed = true;
+            }
+        }
+        if (anyFailed) {
+            fail("Algún símbolo de la configuración no existe en su rueda.");
+            return;
+        }
+        succeed();
+    }
+
+    /**
+     * Gira cada una de las ruedas de la maquina de forma independiente y
+     * aleatoria. Las ruedas fijadas no se giran.
      */
     public void spin()
     {
@@ -146,7 +279,7 @@ public class SlotMachine
             return;
         }
         for (Wheel wheel : wheels) {
-            if (!wheel.getSymbols().isEmpty()) {
+            if (!wheel.getSymbols().isEmpty() && !wheel.isLocked()) {
                 wheel.spin(randomSteps(wheel));
             }
         }
@@ -154,8 +287,9 @@ public class SlotMachine
     }
 
     /**
-     * devuelve los colores en secuencia en orden de cada una de las ruedas,
-     * empezando desde la rueda en la posicion 1
+     * Devuelve los colores en secuencia en orden de cada una de las ruedas,
+     * empezando desde la rueda en la posicion 1.
+     * @return arreglo con los colores de todos los simbolos de la rueda 1
      */
     public String[] symbols()
     {
@@ -164,7 +298,8 @@ public class SlotMachine
     }
 
     /**
-     * Retorna cuantos colores distintos se estan mostrando en las ruedas creadas
+     * Retorna cuantos colores distintos se estan mostrando en las ruedas.
+     * @return numero de colores distintos visibles
      */
     public int distinctSymbols()
     {
@@ -173,7 +308,8 @@ public class SlotMachine
     }
 
     /**
-     * Muestra los colores en cada una de las ruedas de izquierda a derecha 
+     * Muestra los colores visibles en cada rueda de izquierda a derecha.
+     * @return arreglo con el color visible de cada rueda
      */
     public String[] configuration()
     {
@@ -187,7 +323,8 @@ public class SlotMachine
     }
 
     /**
-     * Retorna true si cada una de las ruedas muestran que tienen el mismo color
+     * Retorna true si todas las ruedas muestran el mismo color.
+     * @return true si hay jackpot
      */
     public boolean isJackpot()
     {
@@ -196,37 +333,34 @@ public class SlotMachine
     }
 
     /**
-     * Muestra la maquina y cada una de las ruedas previamanete creadas dentro
-     * del canvas
+     * Muestra la maquina y cada una de las ruedas dentro del canvas.
      */
-    public void makeVisible() {
-    this.visible = true;
-    if (jackpotLight == null) {
-        jackpotLight = new Circle();
-    }
-    jackpotLight.makeVisible();
-    for (Wheel w : wheels) {
-        w.drawWheel();
-    }
-    
+    public void makeVisible()
+    {
+        this.visible = true;
+        if (jackpotLight == null) {
+            jackpotLight = new Circle();
+        }
+        jackpotLight.makeVisible();
+        for (Wheel w : wheels) {
+            w.drawWheel();
+        }
     }
 
     /**
-     * Esconde la maquina del canvas pero el funcionamiento de la maquina sigue
-     * siendo el mismo asi no se este viendo haciendo spins hasta que se genere 
-     * un jackpot
+     * Esconde la maquina del canvas pero el funcionamiento sigue siendo
+     * el mismo en modo invisible.
      */
-    public void makeInvisible() {
-    this.visible = false;
-    
-    // Solo hace invisible la luz si no es nula
-    if (jackpotLight != null) {
-        jackpotLight.makeInvisible();
-    }
+    public void makeInvisible()
+    {
+        this.visible = false;
+        if (jackpotLight != null) {
+            jackpotLight.makeInvisible();
+        }
     }
 
     /**
-     * Acaba la simulacion de la maquina 
+     * Acaba la simulacion de la maquina.
      */
     public void exit()
     {
@@ -234,13 +368,14 @@ public class SlotMachine
     }
 
     /**
-     * Retorna que la ultima operacion de la maquina fue completada de manera
-     * satisfactoria
+     * Retorna si la ultima operacion fue completada satisfactoriamente.
+     * @return true si la ultima operacion fue exitosa
      */
     public boolean ok()
     {
         return lastOk;
     }
+
     
     private void succeed()
     {
@@ -257,15 +392,14 @@ public class SlotMachine
     private void showError(String msg)
     {
         if (visible) {
-            JOptionPane.showMessageDialog(null, msg, "SlotMachine", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, msg, "SlotMachine",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void refresh()
     {
-        if (!visible) {
-            return;
-        }
+        if (!visible) return;
         for (Wheel wheel : wheels) {
             wheel.drawWheel();
         }
@@ -283,7 +417,8 @@ public class SlotMachine
 
     private boolean isJackpotQuiet()
     {
-        return !wheels.isEmpty() && allWheelsHaveSymbol() && distinctSymbolsQuiet() == 1;
+        return !wheels.isEmpty() && allWheelsHaveSymbol()
+            && distinctSymbolsQuiet() == 1;
     }
 
     private int distinctSymbolsQuiet()
@@ -301,29 +436,21 @@ public class SlotMachine
     private boolean allWheelsHaveSymbol()
     {
         for (Wheel wheel : wheels) {
-            if (wheel.currentSymbol() == null) {
-                return false;
-            }
+            if (wheel.currentSymbol() == null) return false;
         }
         return true;
     }
 
     private Wheel wheelAt(int pos)
     {
-        if (wheels.isEmpty()) {
-            return null;
-        }
+        if (wheels.isEmpty()) return null;
         return wheels.get(clamp(pos, 1, wheels.size()) - 1);
     }
 
     private int clamp(int value, int min, int max)
     {
-        if (value < min) {
-            return min;
-        }
-        if (value > max) {
-            return max;
-        }
+        if (value < min) return min;
+        if (value > max) return max;
         return value;
     }
 
@@ -335,18 +462,14 @@ public class SlotMachine
     private boolean containsColor(String color)
     {
         for (String existing : symbolsQuiet()) {
-            if (existing.equals(color)) {
-                return true;
-            }
+            if (existing.equals(color)) return true;
         }
         return false;
     }
 
     private String[] symbolsQuiet()
     {
-        if (wheels.isEmpty()) {
-            return new String[0];
-        }
+        if (wheels.isEmpty()) return new String[0];
         ArrayList<Symbol> reference = wheels.get(0).getSymbols();
         String[] result = new String[reference.size()];
         for (int i = 0; i < reference.size(); i++) {
@@ -357,9 +480,7 @@ public class SlotMachine
 
     private void copySharedSymbolsInto(Wheel wheel)
     {
-        if (wheels.isEmpty()) {
-            return;
-        }
+        if (wheels.isEmpty()) return;
         for (Symbol s : wheels.get(0).getSymbols()) {
             wheel.addSymbol(s.getColor());
         }

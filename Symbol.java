@@ -1,32 +1,33 @@
 /**
  * @author Yamel Sarmiento - Johan Pinilla
  */
-public class Symbol extends Rectangle
+public class Symbol extends Triangle
 {
-    /** Size, in pixels, used to draw every symbol. */
+    /** Tamaño usado para dibujar cada simbolo. */
     public static final int WIDTH = 50;
     public static final int HEIGHT = 70;
 
-    private String color;   
+    private String color;
     private int currentX;
     private int currentY;
 
     /**
-     * Crea un nuevo symbol al color dado , el symbol no se expresa hasta que
-     * el canvas es llamado
+     * Crea un nuevo simbolo triangular con el color indicado.
      */
     public Symbol(String color)
     {
         super();
+
         this.color = color;
         this.currentX = 0;
         this.currentY = 0;
+
         changeSize(HEIGHT, WIDTH);
         changeColor(CssColors.toColor(color));
     }
 
     /**
-     * regresa el nombre exacto del color del CSS a este symbol
+     * Regresa el nombre exacto del color CSS de este simbolo.
      */
     public String getColor()
     {
@@ -34,18 +35,19 @@ public class Symbol extends Rectangle
     }
 
     /**
-     * Parametriza el movimiento de las coordenadas del symbol usando shapes
+     * Mueve el simbolo a las coordenadas indicadas.
      */
     void moveTo(int targetX, int targetY)
     {
         moveHorizontal(targetX - currentX);
         moveVertical(targetY - currentY);
+
         currentX = targetX;
         currentY = targetY;
     }
 
     /**
-     * Muestra el resultado del canvas al momento de hacer la maquina visible 
+     * Muestra el simbolo.
      */
     public void draw()
     {
@@ -53,7 +55,7 @@ public class Symbol extends Rectangle
     }
 
     /**
-     * Esconde el symbol al momento de que la maquina se hace invisible
+     * Esconde el simbolo.
      */
     public void erase()
     {

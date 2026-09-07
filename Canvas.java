@@ -24,13 +24,12 @@ public class Canvas{
     /**
      * Factory method to get the canvas singleton object.
      */
-    public static Canvas getCanvas(){
-        if(canvasSingleton == null) {
-            canvasSingleton = new Canvas("BlueJ Shapes Demo", 300, 300, 
-                                         Color.white);
-        }
-        canvasSingleton.setVisible(true);
-        return canvasSingleton;
+    public static Canvas getCanvas() {
+    if (canvasSingleton == null) {
+        canvasSingleton = new Canvas("Slot Machine Demo", 1000, 400, Color.white);
+    }
+    canvasSingleton.setVisible(true);
+    return canvasSingleton;
     }
 
     //  ----- instance part -----
