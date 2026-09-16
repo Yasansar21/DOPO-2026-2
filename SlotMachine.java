@@ -14,7 +14,18 @@ public class SlotMachine
     private boolean lastOk;
     private Circle jackpotLight;
     private Random random;
-
+    private static final String[] INITIAL_COLORS = {
+    "red", "blue", "green", "yellow", "magenta",
+    "orange", "purple", "cyan", "tomato", "gold",
+    "coral", "crimson", "brown", "black", "white",
+    "gray", "silver", "pink", "violet", "indigo",
+    "navy", "teal", "lime", "olive", "maroon",
+    "chocolate", "salmon", "khaki", "turquoise", "aquamarine",
+    "blueviolet", "chartreuse", "darkblue", "darkcyan", "darkgreen",
+    "darkmagenta", "darkorange", "darkred", "deeppink", "deepskyblue",
+    "forestgreen", "hotpink", "lightblue", "lightcoral", "lightgreen",
+    "lightsalmon", "mediumblue", "orchid", "royalblue", "seagreen"
+};
     /**
      * Creacion de una nueva slot machine que inicia de manera invisible,
      * ninguna rueda (las ruedas hay que crearlas al momento de hacer visible
@@ -28,6 +39,26 @@ public class SlotMachine
         random = new Random();
     }
 
+    /**
+    * Creacion del nuevo Slotmachine invisible, con n ruedas y n simbolos.
+    * @param n cantidad de ruedas y simbolos que se crearan
+    */
+    public SlotMachine(int n ){
+        this ();
+        if (n < 1 || n > INITIAL_COLORS.length ){
+            System.out.println ("La cantidad de ruedas debe estar entre 1 y " + INITIAL_COLORS.length + ".");
+            return ;
+        }
+
+        for (int i = 1; i <= n; i++){
+            addWheel(i);
+        }
+        for (int i = 1 ; i <= n; i++) {
+            addSymbol (i, INITIAL_COLORS[I-1]);
+        }
+    }
+    
+    
     /**
      * Crea la slot machine y crea espacios vacios para la creacion de las ruedas
      * segun la posicion determinada.
@@ -80,6 +111,10 @@ public class SlotMachine
         }
         Wheel w1 = wheels.get(pos1 - 1);
         Wheel w2 = wheels.get(pos2 - 1);
+
+        if (w1.islocked() || w2.islocked()){
+            return;
+        }
         wheels.set(pos1 - 1, w2);
         wheels.set(pos2 - 1, w1);
         renumberWheels();
