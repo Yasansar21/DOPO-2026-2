@@ -54,7 +54,7 @@ public class SlotMachine
             addWheel(i);
         }
         for (int i = 1 ; i <= n; i++) {
-            addSymbol (i, INITIAL_COLORS[I-1]);
+            addSymbol (i, INITIAL_COLORS[i-1]);
         }
     }
     
