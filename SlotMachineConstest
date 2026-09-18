@@ -1,0 +1,54 @@
+import java.util.Scanner;
+/**
+ * Esta calse resuleve y simula el probelma de la maraton
+ * @author Yamel Sarmiento - Johan Pinilla 
+ */
+public class SlotMachineContest{
+  /**
+   * Resuelve el problema para una maquina de n ruedas y n simbolos
+   * Siempre Permanece invisible
+   * @param n numero de ruedas y simbolos
+   * @return arrayList de acciones hasta lograr el JACKPOT
+   */
+   public int [][] solve (int  n) {
+      SlotMachine machine = new SlotMachine ();
+      ArrayList <int []> actions = new ArrayList <> ();
+      int k = machine.distinctSymbols ();
+      if ( k == 1) {
+        return new int [0][];
+      }
+      for (int i = 2; i <= n; i++) {
+        int kBefore = k;
+        for (int j = 0; j < n; j++) {
+          machine.spin (i, 1);
+          actions.add (new int [] {i, 1} );
+          if (k == 1) {
+            return toArray(actions);
+          }
+          if (k < kBefore) {
+            break;
+          }
+      }
+    }
+    return toArray( actions);
+   }
+   
+   
+   /**
+    * 
+    */
+   public void simulate (int n) {
+
+   }
+
+//---------- Metodo Auxiliar ------------------------------
+/**
+ * Vuelve el ArrayList en una matriz
+ * @param actions es la lista de acciones {i,j}
+ * @return arreglo int [][] con las acciones
+ */
+
+  private int [][] toArray (ArrayList <int []> actions){
+    return actions.toArray (new int [0][]);
+  }
+}
