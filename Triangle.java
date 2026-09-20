@@ -17,7 +17,6 @@ public class Triangle{
     private int yPosition;
     private String color;
     private boolean isVisible;
-    private Color exactColor;
 
     /**
      * Create a new triangle at default position with default color.
@@ -28,7 +27,6 @@ public class Triangle{
         xPosition = 140;
         yPosition = 15;
         color = "green";
-        exactColor = null;
         isVisible = false;
     }
 
@@ -155,46 +153,18 @@ public class Triangle{
      */
     public void changeColor(String newColor){
         color = newColor;
-        exactColor = null;
         draw();
     }
-    public void changeColor(Color newColor){
-        exactColor = newColor;
-        draw();
-    }
-        /*
-         * Draw the triangle with current specifications on screen.
-         */
-        private void draw(){
+
+    /*
+     * Draw the triangle with current specifications on screen.
+     */
+    private void draw(){
         if(isVisible) {
             Canvas canvas = Canvas.getCanvas();
-    
-            int[] xpoints = {
-                xPosition,
-                xPosition + (width / 2),
-                xPosition - (width / 2)
-            };
-    
-            int[] ypoints = {
-                yPosition,
-                yPosition + height,
-                yPosition + height
-            };
-    
-            if (exactColor != null) {
-                canvas.draw(
-                    this,
-                    exactColor,
-                    new Polygon(xpoints, ypoints, 3)
-                );
-            } else {
-                canvas.draw(
-                    this,
-                    color,
-                    new Polygon(xpoints, ypoints, 3)
-                );
-            }
-    
+            int[] xpoints = { xPosition, xPosition + (width/2), xPosition - (width/2) };
+            int[] ypoints = { yPosition, yPosition + height, yPosition + height };
+            canvas.draw(this, color, new Polygon(xpoints, ypoints, 3));
             canvas.wait(10);
         }
     }

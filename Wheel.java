@@ -7,16 +7,15 @@ import java.util.ArrayList;
 public class Wheel {
     private static final int WINDOW_LEFT = 60;
     private static final int WINDOW_TOP = 100;
-    private static final int WINDOW_GAP = 30;
-    private static final int FRAME_MARGIN = 15;
-    private static final int FRAME_WIDTH = Symbol.WIDTH + FRAME_MARGIN * 2;
-    private static final int FRAME_HEIGHT = Symbol.HEIGHT + FRAME_MARGIN * 2;
+    private static final int WINDOW_GAP = 20;
+    private static final int CONTOUR_MARGIN = 6;
+    private static final int CONTOUR_THICKNESS = 3;
 
     private ArrayList<Symbol> symbols;
     private int currentIndex;
     private int position;
-    private boolean locked;        // ← NUEVO Ciclo 2
-    private final Object frame;
+    private boolean locked;
+
     /**
      * Crea una rueda vacia en relacion con la posicion dentro de la maquina.
      * @param position posicion 1-based de la rueda en la maquina
@@ -25,20 +24,18 @@ public class Wheel {
         symbols = new ArrayList<>();
         currentIndex = 0;
         this.position = position;
-        locked = false;            // ← NUEVO Ciclo 2
-        frame = new Object();
+        locked = false;
     }
 
     /**
-     * Agrega un nuevo symbol al color dado en cada una de las ruedas.
+     * Agrega un nuevo symbol al color dado.
      */
     public void addSymbol(String color) {
         addSymbol(symbols.size(), color);
     }
 
     /**
-     * Mantener cada uno de los symbols en secuencia en el mismo orden
-     * establecido.
+     * Mantiene los simbolos en el orden establecido.
      */
     void addSymbol(int index, String color) {
         int target = Math.max(0, Math.min(index, symbols.size()));
@@ -49,15 +46,17 @@ public class Wheel {
     }
 
     /**
-     * Quita el symbol del color dado, si se presenta se elimina del canvas.
+     * Quita el symbol del color dado.
      * @param color color del simbolo a eliminar
      * @return true si se elimino, false si no existia
      */
     public boolean delSymbol(String color) {
         int idx = indexOf(color);
         if (idx == -1) return false;
+
         Symbol removed = symbols.remove(idx);
         removed.erase();
+
         if (symbols.isEmpty()) {
             currentIndex = 0;
         } else if (currentIndex >= symbols.size()) {
@@ -65,64 +64,64 @@ public class Wheel {
         } else if (idx < currentIndex) {
             currentIndex--;
         }
+
         return true;
     }
 
     /**
      * Hace que el symbol del color dado sea el visible en la rueda.
      * @param color color del simbolo a mostrar
-     * @return true si se encontro y se posiciono, false si no existia
+     * @return true si se encontro, false si no existia
      */
     public boolean placeSymbol(String color) {
         int idx = indexOf(color);
         if (idx == -1) return false;
+
         currentIndex = idx;
         return true;
     }
 
     /**
-     * Rota la rueda un numero de pasos. Soporta pasos negativos.
-     * Usa floorMod para garantizar indice positivo siempre.
+     * Rota la rueda un numero de pasos.
      * @param steps numero de pasos a girar
      */
     public void spin(int steps) {
         if (!symbols.isEmpty()) {
-            currentIndex = Math.floorMod(currentIndex + steps, symbols.size());
+            currentIndex = Math.floorMod(
+                currentIndex + steps,
+                symbols.size()
+            );
         }
     }
 
-    /**
-     * Fija la rueda para que no pueda girar.
-     */
-    public void lock() {                         // Ciclo 2
+    /** Fija la rueda. */
+    public void lock() {
         locked = true;
     }
 
-    /**
-     * Suelta la rueda para que pueda girar nuevamente.
-     */
-    public void unlock() {                       // Ciclo 2
+    /** Suelta la rueda. */
+    public void unlock() {
         locked = false;
     }
 
     /**
      * Indica si la rueda esta fijada.
-     * @return true si la rueda esta bloqueada
+     * @return true si esta bloqueada
      */
-    public boolean isLocked() {                  // Ciclo 2
+    public boolean isLocked() {
         return locked;
     }
 
     /**
-     * Devuelve el symbol visible actualmente.
-     * @return symbol actual, null si la rueda esta vacia
+     * Devuelve el simbolo visible actualmente.
+     * @return simbolo actual, null si esta vacia
      */
     public Symbol currentSymbol() {
         return symbols.isEmpty() ? null : symbols.get(currentIndex);
     }
 
     /**
-     * Retorna la lista completa de simbolos de la rueda.
+     * Retorna la lista completa de simbolos.
      * @return lista de simbolos
      */
     public ArrayList<Symbol> getSymbols() {
@@ -130,63 +129,135 @@ public class Wheel {
     }
 
     /**
-     * @return posicion 1-based de la rueda dentro de la maquina
+     * @return posicion 1-based de la rueda
      */
     public int getPosition() {
         return position;
     }
 
+    /**
+     * Cambia la posicion de la rueda.
+     */
     void setPosition(int position) {
         this.position = position;
     }
 
-        /**
-         * Redibuja la rueda: esconde todos los simbolos y muestra solo el actual.
-         */
+    /**
+     * Redibuja la rueda: marco, simbolos y simbolo actual.
+     */
     void drawWheel() {
+        drawContour();
+
         for (Symbol s : symbols) {
             s.erase();
         }
-    
-        int x = WINDOW_LEFT
-            + (position - 1) * (Symbol.WIDTH + WINDOW_GAP);
-    
-        int frameX = x - FRAME_MARGIN;
-        int frameY = WINDOW_TOP - FRAME_MARGIN;
-    
-        Canvas.getCanvas().drawOutline(
-            frame,
-            java.awt.Color.BLACK,
-            new java.awt.Rectangle(
-                frameX,
-                frameY,
-                FRAME_WIDTH,
-                FRAME_HEIGHT
-            )
-        );
-    
+
         Symbol current = currentSymbol();
-    
+
         if (current != null) {
+            int x = WINDOW_LEFT
+                + (position - 1) * (Symbol.WIDTH + WINDOW_GAP);
+
             current.moveTo(x, WINDOW_TOP);
             current.draw();
         }
     }
 
     /**
-     * Elimina visualmente toda la rueda.
+     * Dibuja el contorno negro que delimita la rueda.
+     */
+    private void drawContour() {
+        Canvas canvas = Canvas.getCanvas();
+
+        int x = WINDOW_LEFT
+            + (position - 1) * (Symbol.WIDTH + WINDOW_GAP);
+        int y = WINDOW_TOP;
+
+        int left = x - CONTOUR_MARGIN;
+        int top = y - CONTOUR_MARGIN;
+        int width = Symbol.WIDTH + 2 * CONTOUR_MARGIN;
+        int height = Symbol.HEIGHT + 2 * CONTOUR_MARGIN;
+
+        String base = "wheel-contour-" + this;
+
+        canvas.draw(
+            base + "-top",
+            "black",
+            new java.awt.Rectangle(
+                left,
+                top,
+                width,
+                CONTOUR_THICKNESS
+            )
+        );
+
+        canvas.draw(
+            base + "-bottom",
+            "black",
+            new java.awt.Rectangle(
+                left,
+                top + height - CONTOUR_THICKNESS,
+                width,
+                CONTOUR_THICKNESS
+            )
+        );
+
+        canvas.draw(
+            base + "-left",
+            "black",
+            new java.awt.Rectangle(
+                left,
+                top,
+                CONTOUR_THICKNESS,
+                height
+            )
+        );
+
+        canvas.draw(
+            base + "-right",
+            "black",
+            new java.awt.Rectangle(
+                left + width - CONTOUR_THICKNESS,
+                top,
+                CONTOUR_THICKNESS,
+                height
+            )
+        );
+    }
+
+    /**
+     * Esconde el simbolo actual y deja limpia la rueda.
+     */
+    void eraseCurrent() {
+        Symbol current = currentSymbol();
+        if (current != null) current.erase();
+    }
+
+    /**
+     * Elimina visualmente toda la rueda, incluido su contorno.
      */
     void eraseWheel() {
-        for (Symbol s : symbols) {
-            s.erase();
+        for (Symbol symbol : symbols) {
+            symbol.erase();
         }
-    
-        Canvas.getCanvas().erase(frame);
+
+        if (!Canvas.exists()) {
+            return;
+        }
+
+        Canvas canvas = Canvas.getExistingCanvas();
+        String base = "wheel-contour-" + this;
+        canvas.erase(base + "-top");
+        canvas.erase(base + "-bottom");
+        canvas.erase(base + "-left");
+        canvas.erase(base + "-right");
     }
 
     private int indexOf(String color) {
         for (int i = 0; i < symbols.size(); i++) {
-            if (symbols.get(i).getColor().equals(color)) return i;
+            if (symbols.get(i).getColor().equals(color)) {
+                return i;
+            }
         }
         return -1;
     }

@@ -1,54 +1,71 @@
-import java.util.Scanner;
+import java.util.ArrayList;
+
 /**
- * Esta calse resuleve y simula el probelma de la maraton
- * @author Yamel Sarmiento - Johan Pinilla 
+ * Resuelve y simula el problema de la maraton para la SlotMachine.
+ *
+ * Esta clase usa una SlotMachine por composicion. No hereda de SlotMachine,
+ * porque su responsabilidad es resolver el problema usando una maquina,
+ * no convertirse en una rueda o en una maquina diferente.
+ *
+ * @author Yamel Sarmiento - Johan Pinilla
  */
-public class SlotMachineContest{
-  /**
-   * Resuelve el problema para una maquina de n ruedas y n simbolos
-   * Siempre Permanece invisible
-   * @param n numero de ruedas y simbolos
-   * @return arrayList de acciones hasta lograr el JACKPOT
-   */
-   public int [][] solve (int  n) {
-      SlotMachine machine = new SlotMachine ();
-      ArrayList <int []> actions = new ArrayList <> ();
-      int k = machine.distinctSymbols ();
-      if ( k == 1) {
-        return new int [0][];
-      }
-      for (int i = 2; i <= n; i++) {
-        int kBefore = k;
-        for (int j = 0; j < n; j++) {
-          machine.spin (i, 1);
-          actions.add (new int [] {i, 1} );
-          if (k == 1) {
-            return toArray(actions);
-          }
-          if (k < kBefore) {
-            break;
-          }
-      }
+public class SlotMachineContest
+{
+    /**
+     * Resuelve el escenario local de la maquina usando la informacion
+     * disponible en SlotMachine.
+     * @param n numero de ruedas y simbolos
+     * @return matriz de acciones {rueda, pasos}
+     */
+    public int[][] solve(int n)
+    {
+        SlotMachine machine = createNonJackpotMachine(n);
+        ArrayList<int[]> actions = new ArrayList<>();
+
+        for (int i = 2; i <= n; i++) {
+            int steps = -(i - 1);
+            machine.spin(i, steps);
+            actions.add(new int[]{i, steps});
+        }
+
+        return toArray(actions);
     }
-    return toArray( actions);
-   }
-   
-   
-   /**
-    * 
-    */
-   public void simulate (int n) {
 
-   }
+    /**
+     * Simula la solucion haciendola visible en el canvas paso a paso.
+     *
+     * @param n numero de ruedas y simbolos
+     */
+    public void simulate(int n)
+    {
+        SlotMachine machine = createNonJackpotMachine(n);
+        machine.makeVisible();
 
-//---------- Metodo Auxiliar ------------------------------
-/**
- * Vuelve el ArrayList en una matriz
- * @param actions es la lista de acciones {i,j}
- * @return arreglo int [][] con las acciones
- */
+        for (int i = 2; i <= n; i++) {
+            machine.spin(i, -(i - 1));
+        }
+    }
 
-  private int [][] toArray (ArrayList <int []> actions){
-    return actions.toArray (new int [0][]);
-  }
+    /**
+     * Crea una maquina con una configuracion inicial que no es jackpot.
+     * Se usa un desplazamiento diferente para cada rueda.
+     */
+    private SlotMachine createNonJackpotMachine(int n)
+    {
+        SlotMachine machine = new SlotMachine(n);
+
+        for (int i = 2; i <= n; i++) {
+            machine.spin(i, i - 1);
+        }
+
+        return machine;
+    }
+
+    /**
+     * Vuelve el ArrayList en una matriz de enteros.
+     */
+    private int[][] toArray(ArrayList<int[]> actions)
+    {
+        return actions.toArray(new int[0][]);
+    }
 }
