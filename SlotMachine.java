@@ -78,12 +78,43 @@ public class SlotMachine
      *
      * @param pos posicion donde se agrega la rueda
      */
-    public void addWheel(int pos)
-    {
+   /**
+     * **
+     * Agrega una rueda normal a la maquina
+     * @param pos posiscion donde se agregara
+     */
+    public void addWheel (int pos){
+        addWheel(pos, "normal");
+    }
+    
+    /**
+     * Agrega una rueda del tipo solicitado 
+     * 
+     * los tipos son:
+     * normla, lefty, rebel
+     * 
+     * @param pos posicion deonde va la rueda
+     * @param type nombre del tipo de rueda
+     */
+    public void addWheel(int pos, String type){
+        /**
+         * Se ajusta la posicion para que quede 
+         * entre la primera y ultima posicion
+         */
         int target = clamp(pos, 1, wheels.size() + 1);
+        
+        // se crea el objeto wheel, leftWheel o  rebelWheel
+        Wheel wheel = createWheel(target, type);
 
-        Wheel wheel = new Wheel(target);
-
+        /**
+         * Si el tipo de rueda no existe 
+         * la operacion falla
+         */
+        if (wheel == null){
+            fail ("El tipo de rueda no es valido");
+            return;
+        }
+        
         copySharedSymbolsInto(wheel);
 
         wheels.add(target - 1, wheel);
@@ -94,9 +125,37 @@ public class SlotMachine
     }
 
     /**
-     * Remueve la rueda asignada a la posicion dada.
+     * Crea una rueda según el tipo solicitado.
      *
-     * @param pos posicion de la rueda a eliminar
+     * @param position posición de la nueva rueda
+     * @param type nombre del tipo solicitado
+     * @return una rueda creada o null si el tipo no existe
+     */
+    private Wheel createWheel(int position, String type)
+    {
+        if ("normal".equalsIgnoreCase(type)) {
+            return new Wheel(position);
+        }
+    
+        if ("lefty".equalsIgnoreCase(type)) {
+            return new LeftyWheel(position);
+        }
+    
+        if ("rebel".equalsIgnoreCase(type)) {
+            return new RebelWheel(position);
+        }
+    
+        // Se retorna null para informar que el tipo no es válido.
+        return null;
+    }
+    
+   /**
+     * **
+     * Elimina una rueda de la máquina.
+     *
+     * Una rueda rebel no se puede eliminar.
+     *
+     * @param pos posición de la rueda que se desea eliminar
      */
     public void delWheel(int pos)
     {
@@ -104,16 +163,55 @@ public class SlotMachine
             fail("No hay ruedas en la máquina.");
             return;
         }
-
+    
+        // Se ajusta la posición recibida a una posición válida.
         int target = clamp(pos, 1, wheels.size());
-
-        Wheel removed = wheels.remove(target - 1);
-
+    
+        // Primero se consulta la rueda, sin eliminarla todavía.
+        Wheel removed = wheels.get(target - 1);
+    
+        // Se protege a la rueda rebel.
+        if (!removed.canBeDeleted()) {
+            fail("La rueda rebel no se puede eliminar.");
+            return;
+        }
+    
+        // Ahora sí se elimina de la lista.
+        wheels.remove(target - 1);
+    
+        // Se borra visualmente del Canvas.
         removed.eraseWheel();
-
+    
+        // Se actualizan las posiciones restantes.
         renumberWheels();
-
+    
         succeed();
+    }
+    
+    /**
+     * **
+     * Gira una rueda normal o hace que una lefty copie
+     * el estado de la rueda izquierda.
+     *
+     * @param wheel rueda que recibe la acción
+     * @param steps cantidad de pasos solicitados
+     */
+    private void turnWheel(Wheel wheel, int steps)
+    {
+        /*
+         * Una lefty solo puede copiar si hay una rueda a su izquierda.
+         * La posición es base 1, pero ArrayList usa base 0.
+         */
+        if (wheel.copiesLeftWheel() && wheel.getPosition() > 1) {
+            Wheel leftWheel = wheels.get(wheel.getPosition() - 2);
+    
+            // La lefty muestra el mismo símbolo que la rueda izquierda.
+            wheel.copyStateFrom(leftWheel);
+        }
+        else {
+            // Una rueda normal o una lefty en posición 1 gira normalmente.
+            wheel.spin(steps);
+        }
     }
 
     /**
