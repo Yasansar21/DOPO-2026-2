@@ -1,0 +1,72 @@
+
+/**
+ * Representa una rueda especial de tipo rebel.
+ * Una rueda rebel puede girar normalmente, pero no permite:
+ * bloquearse, intercambiarse ni eliminarse
+ * 
+ * El borde rojo permite identificarla 
+ * 
+ * @author Yamel Sarmiento - Johan Pinilla 
+ * @version 3/10/26
+ */
+public class RebelWheel extends Wheel{
+
+    /**
+     * Construte una reuda rebel
+     * 
+     * @param position posisicion inicial dentro de la maquina, comenzando en 1
+     */
+    public RebelWheel( int position)
+    {
+        super(position);
+    }
+
+    /**
+     * Indica que una rueda rebel no puede recibir bloqueos
+     * 
+     * @return false porque es una de sus caracteristicas
+     * el no bloquearse
+     */
+    public boolean canBeLocked(){
+        return false;
+    }
+    
+    /**
+     * Indica que una reuda rebel no permite
+     * intercambiarse
+     * 
+     * @return false no se deja intercambiar
+     */
+    public boolean canBeSwapped(){
+        return false;
+    }
+    
+    /**
+     * Indica que una reuda rebel no permite
+     * Eliminarse
+     * 
+     * @return false
+     */
+    public boolean canBeDeleted(){
+        return false;
+    }
+    
+    /**
+     * Evita la llamada directa del lock()
+     * 
+     * Esta vacio porque una rebel no puede ser bloqueada
+     */
+    public void lock (){
+     //no se debe realiza ninguna accion
+    }
+    
+    /**
+     * Define el color rojo en el borde para poder
+     * diferenciarla
+     * 
+     * @return rojo colo del borde
+     */
+    public String  getFrameColor(){
+        return "red";
+    }
+}
