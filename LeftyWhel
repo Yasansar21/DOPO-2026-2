@@ -1,0 +1,38 @@
+
+/**
+ * Esta rueda copia el simbolo visible en la rueda de la izquierda al girar
+ * el borde azul permite identificarla
+ * 
+ * @author Yamel Sarmiento - Johan Pinilla 
+ * @version 3/10/26
+ */
+public class LeftyWheel extends Wheel {
+    /**
+     * Crea una rueda Lefty
+     * 
+     * @param position posicion de la rueda en la maquina
+     */
+    public LeftyWheel(int position){
+        super (position);
+    }
+
+    /**
+     * informa a SlotMachine que esta rueda debe copiar 
+     * a la rueda que esta a si izquierda al girar
+     * 
+     * @return true porque es una rueda tipo lefty
+     */
+    public boolean copiesLeftWheel(){
+        return true;
+    }
+    
+    /**
+     * Define el color en el borde de la rueda para diferenciar
+     * visualmente que es una rueda de tipo lefty
+     * 
+     * @return color azul
+     */
+    public String getFrameColor(){
+        return "blue";
+    }
+}
