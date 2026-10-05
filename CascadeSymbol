@@ -1,0 +1,65 @@
+import java.awt.Shape;
+import java.awt.geom.Path2D;
+
+/**
+ * Simbolo cascada (requisito 19, propuesto por el equipo).
+ *
+ * Es un ShySymbol especial: solo puede aparecer en la primera rueda creada de
+ * la maquina, con una probabilidad del 10% en cada giro de esa rueda. Cuando
+ * aparece se vuelve shy (queda invisible) y desencadena un efecto cascada: la
+ * maquina convierte todos los demas simbolos de todas las ruedas en shy
+ * reducidos a un punto y, cuando ya todos son shy y punto, declara un
+ * "insta jackpot".
+ *
+ * Es transitorio: no forma parte de la lista de simbolos compartidos de la
+ * maquina, aparece sobre el simbolo que habria mostrado la rueda y desaparece
+ * al terminar la cascada.
+ *
+ * Se distingue por un rombo sobre el triangulo.
+ *
+ * @author Yamel Sarmiento - Johan Pinilla
+ */
+public class CascadeSymbol extends ShySymbol
+{
+    /**
+     * Crea un simbolo cascada del color dado (el color del simbolo al que
+     * reemplaza, que sera tambien el color del insta jackpot).
+     *
+     * @param color color CSS del simbolo
+     */
+    public CascadeSymbol(String color)
+    {
+        super(color);
+    }
+
+    @Override
+    public String getType()
+    {
+        return "cascade";
+    }
+
+    @Override
+    public boolean triggersCascade()
+    {
+        return true;
+    }
+
+    @Override
+    public Symbol copy()
+    {
+        return new CascadeSymbol(getColor());
+    }
+
+    @Override
+    protected Shape markerShape(int cx, int cy, int size)
+    {
+        int r = Math.max(7, size);
+        Path2D.Double diamond = new Path2D.Double();
+        diamond.moveTo(cx, cy - r);
+        diamond.lineTo(cx + r * 0.7, cy);
+        diamond.lineTo(cx, cy + r);
+        diamond.lineTo(cx - r * 0.7, cy);
+        diamond.closePath();
+        return diamond;
+    }
+}

@@ -277,4 +277,309 @@ public class SlotMachineTest
 
         assertTrue(true);
     }
+    // ------------------------------------------------------------------
+    // Requisito 18: ephemeral
+    // ------------------------------------------------------------------
+
+    @Test
+    public void testEphemeralShrinksOnEachSpinUntilPoint()
+    {
+        EphemeralSymbol symbol = new EphemeralSymbol("red");
+
+        assertEquals(1.0, symbol.getScale(), 0.0001);
+        assertFalse(symbol.isPoint());
+
+        double previous = symbol.getScale();
+        for (int i = 0; i < EphemeralSymbol.STEPS_TO_POINT; i++) {
+            symbol.onSpin();
+            assertTrue(symbol.getScale() < previous);
+            previous = symbol.getScale();
+        }
+
+        assertTrue(symbol.isPoint());
+
+        symbol.onSpin();
+        assertTrue(symbol.isPoint());
+    }
+
+    @Test
+    public void testEphemeralShrinksOnceForEachSpinOfItsWheel()
+    {
+        Wheel wheel = new Wheel(1);
+        EphemeralSymbol ephemeral = new EphemeralSymbol("red");
+        wheel.addSymbol(ephemeral);
+        wheel.addSymbol(new Symbol("blue"));
+
+        // Un giro de varios pasos cuenta como UN solo giro.
+        wheel.spin(3);
+
+        assertEquals(0.8, ephemeral.getScale(), 0.0001);
+    }
+
+    @Test
+    public void testEphemeralInMachineBecomesPoint()
+    {
+        machine.addSymbol("ephemeral", 4, "yellow");
+        assertTrue(machine.ok());
+
+        for (int i = 0; i < EphemeralSymbol.STEPS_TO_POINT; i++) {
+            machine.spin(1, 1);
+        }
+
+        assertTrue(machine.ok());
+        assertEquals("ephemeral", machine.symbolTypes()[3]);
+    }
+
+    // ------------------------------------------------------------------
+    // Requisito 18: shy
+    // ------------------------------------------------------------------
+
+    @Test
+    public void testShyTogglesVisibilityWhenSelected()
+    {
+        ShySymbol symbol = new ShySymbol("red");
+
+        assertFalse(symbol.isConcealed());
+        symbol.onSelected();
+        assertTrue(symbol.isConcealed());
+        symbol.onSelected();
+        assertFalse(symbol.isConcealed());
+    }
+
+    @Test
+    public void testShyTogglesWhenPlacedInWheel()
+    {
+        Wheel wheel = new Wheel(1);
+        ShySymbol shy = new ShySymbol("red");
+        wheel.addSymbol(shy);
+        wheel.addSymbol(new Symbol("blue"));
+
+        wheel.placeSymbol("red");
+        assertTrue(shy.isConcealed());
+
+        wheel.placeSymbol("blue");
+        assertTrue(shy.isConcealed());
+
+        wheel.placeSymbol("red");
+        assertFalse(shy.isConcealed());
+    }
+
+    @Test
+    public void testShyKeepsItsColorWhileInvisible()
+    {
+        machine.addSymbol("shy", 4, "yellow");
+
+        machine.placeSymbol(1, "yellow");
+        machine.placeSymbol(2, "yellow");
+        machine.placeSymbol(3, "yellow");
+
+        assertTrue(machine.ok());
+        assertTrue(machine.isJackpot());
+        assertEquals(1, machine.distinctSymbols());
+    }
+
+    // ------------------------------------------------------------------
+    // Tipos de simbolos en la maquina
+    // ------------------------------------------------------------------
+
+    @Test
+    public void testAddSymbolWithType()
+    {
+        machine.addSymbol("ephemeral", 4, "yellow");
+        machine.addSymbol("shy", 5, "orange");
+
+        assertTrue(machine.ok());
+        assertArrayEquals(
+            new String[]{"normal", "normal", "normal", "ephemeral", "shy"},
+            machine.symbolTypes()
+        );
+    }
+
+    @Test
+    public void testAddSymbolInvalidType()
+    {
+        machine.addSymbol("invisible", 4, "yellow");
+
+        assertFalse(machine.ok());
+        assertEquals(3, machine.symbols().length);
+    }
+
+    @Test
+    public void testNewWheelKeepsSymbolTypes()
+    {
+        machine.addSymbol("ephemeral", 4, "yellow");
+        machine.addSymbol("shy", 5, "orange");
+
+        machine.addWheel(4);
+
+        assertTrue(machine.ok());
+        assertArrayEquals(
+            new String[]{"normal", "normal", "normal", "ephemeral", "shy"},
+            machine.symbolTypes()
+        );
+        assertEquals(4, machine.configuration().length);
+    }
+
+    // ------------------------------------------------------------------
+    // Requisito 19: simbolo cascada
+    // ------------------------------------------------------------------
+
+    @Test
+    public void testCascadeNeverAppearsWithZeroChance()
+    {
+        for (int i = 0; i < 200; i++) {
+            machine.spin(1);
+            machine.spin();
+        }
+
+        assertFalse(machine.wonByCascade());
+        assertNull(machine.lastWinMessage());
+        assertArrayEquals(
+            new String[]{"normal", "normal", "normal"},
+            machine.symbolTypes()
+        );
+    }
+
+    @Test
+    public void testCascadeMakesInstaJackpot()
+    {
+        machine.setBonusChance(100);
+
+        machine.spin(1);
+
+        assertTrue(machine.ok());
+        assertTrue(machine.wonByCascade());
+        assertTrue(machine.isJackpot());
+        assertEquals(1, machine.distinctSymbols());
+        assertNotNull(machine.lastWinMessage());
+    }
+
+    @Test
+    public void testCascadeConvertsEverySymbolToShy()
+    {
+        machine.setBonusChance(100);
+        machine.addSymbol("ephemeral", 4, "yellow");
+
+        machine.spin(1);
+
+        assertTrue(machine.wonByCascade());
+        for (String type : machine.symbolTypes()) {
+            assertEquals("shy", type);
+        }
+        assertEquals(4, machine.symbols().length);
+    }
+
+    @Test
+    public void testCascadeOnlyAppearsInFirstCreatedWheel()
+    {
+        machine.setBonusChance(100);
+
+        for (int i = 0; i < 50; i++) {
+            machine.spin(2, 1);
+            machine.spin(3, 1);
+        }
+
+        assertFalse(machine.wonByCascade());
+    }
+
+    @Test
+    public void testCascadeAlsoByFullSpin()
+    {
+        machine.setBonusChance(100);
+
+        machine.spin();
+
+        assertTrue(machine.wonByCascade());
+        assertTrue(machine.isJackpot());
+    }
+
+    @Test
+    public void testCascadeWinsEvenWithLockedWheel()
+    {
+        machine.setBonusChance(100);
+        machine.lock(2);
+
+        machine.spin(1);
+
+        assertTrue(machine.wonByCascade());
+        assertTrue(machine.isJackpot());
+    }
+
+    @Test
+    public void testCascadeNotWhenFirstWheelWasDeleted()
+    {
+        machine.setBonusChance(100);
+
+        // La rueda 1 es la primera creada: al borrarla nadie puede dispararlo.
+        machine.delWheel(1);
+
+        for (int i = 0; i < 50; i++) {
+            machine.spin(1, 1);
+            machine.spin();
+        }
+
+        assertFalse(machine.wonByCascade());
+    }
+
+    @Test
+    public void testNewWheelNeverGetsCascade()
+    {
+        machine.setBonusChance(100);
+        machine.delWheel(1);
+        machine.addWheel(1);
+
+        for (int i = 0; i < 50; i++) {
+            machine.spin(1, 1);
+        }
+
+        assertFalse(machine.wonByCascade());
+    }
+
+    @Test
+    public void testWinFlagResetsOnNextSpin()
+    {
+        machine.setBonusChance(100);
+        machine.spin(1);
+        assertTrue(machine.wonByCascade());
+
+        machine.setBonusChance(0);
+        machine.spin(2, 1);
+
+        assertFalse(machine.wonByCascade());
+    }
+
+    @Test
+    public void testCascadeAppearsAboutTenPercentOfTheTime()
+    {
+        int trials = 2000;
+        int wins = 0;
+
+        for (int i = 0; i < trials; i++) {
+            SlotMachine m = new SlotMachine(3);
+            m.spin(1, 1);
+            if (m.wonByCascade()) {
+                wins++;
+            }
+        }
+
+        // 10% esperado de 2000 = 200, con holgura amplia
+        assertTrue(wins > 120 && wins < 280, "victorias: " + wins);
+    }
+
+    @Test
+    public void testWheelAllShyPointsAfterConversion()
+    {
+        Wheel wheel = new Wheel(1);
+        wheel.addSymbol(new Symbol("red"));
+        wheel.addSymbol(new EphemeralSymbol("blue"));
+
+        assertFalse(wheel.allShyPoints());
+
+        wheel.convertToShyPoints();
+
+        assertTrue(wheel.allShyPoints());
+        assertEquals(2, wheel.getSymbols().size());
+        assertEquals("red", wheel.getSymbols().get(0).getColor());
+        assertEquals("blue", wheel.getSymbols().get(1).getColor());
+    }
 }

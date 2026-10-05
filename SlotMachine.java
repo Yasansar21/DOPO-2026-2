@@ -17,9 +17,24 @@ public class SlotMachine
     private Random random;
     private Object body;
 
+    /** Primera rueda creada: la unica que puede mostrar el simbolo cascada. */
+    private Wheel firstWheel;
+
+    /** Probabilidad (0-100) de que el simbolo cascada aparezca al girar. */
+    private int bonusChance;
+
+    /** true si la ultima accion de giro termino en un insta jackpot. */
+    private boolean cascadeWon;
+
+    /** Ultimo mensaje de victoria mostrado (null si no hay). */
+    private String lastWinMessage;
+
     private static final int BODY_LEFT = 35;
     private static final int BODY_TOP = 75;
     private static final int BODY_HEIGHT = 120;
+
+    /** Probabilidad por defecto del simbolo cascada: 10%. */
+    private static final int DEFAULT_BONUS_CHANCE = 10;
 
     private static final String[] INITIAL_COLORS = {
         "red", "blue", "green", "yellow", "magenta",
@@ -45,6 +60,10 @@ public class SlotMachine
         lastOk = true;
         random = new Random();
         body = new Object();
+        firstWheel = null;
+        bonusChance = DEFAULT_BONUS_CHANCE;
+        cascadeWon = false;
+        lastWinMessage = null;
     }
 
     /**
@@ -74,11 +93,6 @@ public class SlotMachine
     }
 
     /**
-     * Crea una nueva rueda en la posicion indicada.
-     *
-     * @param pos posicion donde se agrega la rueda
-     */
-   /**
      * **
      * Agrega una rueda normal a la maquina
      * @param pos posiscion donde se agregara
@@ -119,10 +133,45 @@ public class SlotMachine
 
         wheels.add(target - 1, wheel);
 
+        /*
+         * Solo la primera rueda que se crea en la maquina puede mostrar el
+         * simbolo cascada (requisito 19).
+         */
+        if (firstWheel == null) {
+            firstWheel = wheel;
+            wheel.enableBonus();
+        }
+
         renumberWheels();
 
         succeed();
     }
+    
+    /**
+     * Crea una rueda según el tipo solicitado.
+     *
+     * @param position posición de la nueva rueda
+     * @param type nombre del tipo solicitado
+     * @return una rueda creada o null si el tipo no existe
+     */
+    private Wheel createWheel(int position, String type)
+    {
+        if ("normal".equalsIgnoreCase(type)) {
+            return new Wheel(position);
+        }
+    
+        if ("lefty".equalsIgnoreCase(type)) {
+            return new LeftyWheel(position);
+        }
+    
+        if ("rebel".equalsIgnoreCase(type)) {
+            return new RebelWheel(position);
+        }
+    
+        // Se retorna null para informar que el tipo no es válido.
+        return null;
+    }
+    
 
     /**
      * Crea una rueda según el tipo solicitado.
@@ -213,7 +262,6 @@ public class SlotMachine
             wheel.spin(steps);
         }
     }
-
     /**
      * Intercambia dos ruedas de posicion dentro de la maquina.
      *
@@ -312,6 +360,27 @@ public class SlotMachine
      */
     public void addSymbol(int pos, String color)
     {
+        addSymbol("normal", pos, color);
+    }
+
+    /**
+     * Agrega un nuevo simbolo de un tipo dado a todas las ruedas.
+     *
+     * Los tipos son: normal, ephemeral, shy. Cada rueda recibe su propio
+     * objeto simbolo (asi el estado de un efimero o un shy es independiente
+     * en cada rueda).
+     *
+     * @param type tipo del simbolo
+     * @param pos posicion del simbolo
+     * @param color color CSS valido
+     */
+    public void addSymbol(String type, int pos, String color)
+    {
+        if (createSymbol(type, color) == null) {
+            fail("El tipo de simbolo \"" + type + "\" no es valido.");
+            return;
+        }
+
         if (!CssColors.isValid(color)) {
             fail("\"" + color + "\" no es un color CSS válido.");
             return;
@@ -329,7 +398,7 @@ public class SlotMachine
         ) - 1;
 
         for (Wheel wheel : wheels) {
-            wheel.addSymbol(index, color);
+            wheel.addSymbol(index, createSymbol(type, color));
         }
 
         succeed();
@@ -405,7 +474,11 @@ public class SlotMachine
             return;
         }
 
+        beginSpin();
+
         target.spin(randomSteps(target));
+
+        checkCascade(target);
 
         succeed();
     }
@@ -444,16 +517,27 @@ public class SlotMachine
         int direction = (steps >= 0) ? 1 : -1;
         int totalSteps = Math.abs(steps);
 
+        beginSpin();
+
         if (visible) {
+            /*
+             * La animacion mueve la rueda paso a paso, pero todo cuenta como
+             * UN solo giro: los simbolos se avisan una vez al empezar y el
+             * simbolo final se selecciona una vez al terminar.
+             */
+            target.startSpin();
             for (int i = 0; i < totalSteps; i++) {
-                target.spin(direction);
+                target.step(direction);
                 target.drawWheel();
                 Canvas.getCanvas().wait(300);
             }
+            target.stopSpin();
         }
         else {
             target.spin(steps);
         }
+
+        checkCascade(target);
 
         succeed();
     }
@@ -509,13 +593,25 @@ public class SlotMachine
             return;
         }
 
+        beginSpin();
+
+        boolean firstSpun = false;
+
         for (Wheel wheel : wheels) {
 
             if (!wheel.getSymbols().isEmpty()
                 && !wheel.isLocked()) {
 
                 wheel.spin(randomSteps(wheel));
+
+                if (wheel == firstWheel) {
+                    firstSpun = true;
+                }
             }
+        }
+
+        if (firstSpun) {
+            checkCascade(firstWheel);
         }
 
         succeed();
@@ -531,6 +627,30 @@ public class SlotMachine
         lastOk = true;
 
         return symbolsQuiet();
+    }
+
+    /**
+     * Devuelve el tipo de cada simbolo (normal, ephemeral, shy), en el mismo
+     * orden que symbols().
+     *
+     * @return arreglo con el tipo de cada simbolo
+     */
+    public String[] symbolTypes()
+    {
+        lastOk = true;
+
+        if (wheels.isEmpty()) {
+            return new String[0];
+        }
+
+        ArrayList<Symbol> reference = wheels.get(0).getSymbols();
+        String[] result = new String[reference.size()];
+
+        for (int i = 0; i < reference.size(); i++) {
+            result[i] = reference.get(i).getType();
+        }
+
+        return result;
     }
 
     /**
@@ -642,6 +762,35 @@ public class SlotMachine
     }
 
     /**
+     * Cambia la probabilidad con que aparece el simbolo cascada en la primera
+     * rueda. Por defecto es 10. Sirve para pruebas y demostraciones
+     * (0 = nunca, 100 = siempre).
+     *
+     * @param percent probabilidad entre 0 y 100
+     */
+    public void setBonusChance(int percent)
+    {
+        bonusChance = clamp(percent, 0, 100);
+    }
+
+    /**
+     * @return true si el ultimo giro termino en un insta jackpot provocado
+     * por el simbolo cascada
+     */
+    public boolean wonByCascade()
+    {
+        return cascadeWon;
+    }
+
+    /**
+     * @return el ultimo mensaje de victoria generado, o null si no ha habido
+     */
+    public String lastWinMessage()
+    {
+        return lastWinMessage;
+    }
+
+    /**
      * Retorna si la ultima operacion fue correcta.
      *
      * @return true si fue exitosa
@@ -649,6 +798,136 @@ public class SlotMachine
     public boolean ok()
     {
         return lastOk;
+    }
+
+    /**
+     * Se llama al comenzar cualquier accion de giro.
+     */
+    private void beginSpin()
+    {
+        cascadeWon = false;
+    }
+
+    /**
+     * Despues de que gira una rueda, si es la primera rueda creada, tira el
+     * 10% de probabilidad de que aparezca el simbolo cascada. Si aparece:
+     * se muestra un momento, se vuelve shy (queda invisible) y desencadena
+     * la cascada.
+     *
+     * @param spun rueda que acaba de girar
+     */
+    private void checkCascade(Wheel spun)
+    {
+        if (spun != firstWheel || !wheels.contains(spun)) {
+            return;
+        }
+
+        if (random.nextInt(100) >= bonusChance) {
+            return;
+        }
+
+        Symbol cascade = spun.appearCascade();
+
+        if (cascade == null) {
+            return;
+        }
+
+        // Aparece (todavia visible)...
+        pause(refreshAndWait(700));
+
+        // ... y en ese momento se vuelve shy: queda invisible.
+        cascade.onSelected();
+        pause(refreshAndWait(500));
+
+        if (cascade.triggersCascade()) {
+            runCascade(spun, cascade.getColor());
+        }
+    }
+
+    /**
+     * Efecto cascada: de rueda en rueda (izquierda a derecha) todos los
+     * simbolos pasan a ser shy reducidos a un punto. Cuando todos lo son, se
+     * alinea el color ganador en todas las ruedas (insta jackpot) y se avisa.
+     *
+     * @param origin rueda donde aparecio el simbolo cascada
+     * @param winningColor color con el que se alinean todas las ruedas
+     */
+    private void runCascade(Wheel origin, String winningColor)
+    {
+        origin.clearBonus();
+
+        for (Wheel wheel : wheels) {
+            wheel.convertToShyPoints();
+            pause(refreshAndWait(400));
+        }
+
+        if (!allShyPoints()) {
+            return;
+        }
+
+        /*
+         * Insta jackpot: se alinean todas las ruedas, incluso las fijadas.
+         * forceSymbol no cuenta como seleccion, asi los puntos shy no se
+         * ocultan y el jackpot se alcanza a ver.
+         */
+        for (Wheel wheel : wheels) {
+            wheel.forceSymbol(winningColor);
+        }
+
+        cascadeWon = true;
+        lastWinMessage = "¡HAS GANADO! Insta jackpot: el símbolo cascada "
+            + "convirtió todos los símbolos en shy y todas las ruedas "
+            + "muestran " + winningColor + ".";
+
+        refresh();
+        showMessage(lastWinMessage);
+    }
+
+    private boolean allShyPoints()
+    {
+        for (Wheel wheel : wheels) {
+            if (!wheel.allShyPoints()) {
+                return false;
+            }
+        }
+
+        return !wheels.isEmpty();
+    }
+
+    /**
+     * Redibuja la maquina si es visible.
+     *
+     * @param millis tiempo de espera si se dibujo
+     * @return millis si la maquina es visible, 0 si no (no hay que esperar)
+     */
+    private int refreshAndWait(int millis)
+    {
+        if (!visible) {
+            return 0;
+        }
+
+        refresh();
+
+        return millis;
+    }
+
+    private void pause(int millis)
+    {
+        if (millis > 0 && visible) {
+            Canvas.getCanvas().wait(millis);
+        }
+    }
+
+    private void showMessage(String msg)
+    {
+        if (visible) {
+            JOptionPane.showMessageDialog(
+                null,
+                msg,
+                "SlotMachine",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        }
     }
 
     private void succeed()
@@ -835,7 +1114,7 @@ public class SlotMachine
         }
 
         for (Symbol s : wheels.get(0).getSymbols()) {
-            wheel.addSymbol(s.getColor());
+            wheel.addSymbol(s.copy());
         }
     }
 
